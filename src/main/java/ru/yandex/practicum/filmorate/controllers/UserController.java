@@ -4,7 +4,6 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
 import ru.yandex.practicum.filmorate.exceptions.ValidationException;
-import ru.yandex.practicum.filmorate.model.Film;
 import ru.yandex.practicum.filmorate.model.User;
 
 import javax.validation.Valid;
@@ -18,7 +17,7 @@ import java.util.HashMap;
 @Slf4j
 public class UserController {
     private HashMap<Long, User> users = new HashMap<>();
-    private long id=1;
+    private long id = 1;
 
     @GetMapping("/users")
     public ArrayList<User> findAll() {
@@ -53,7 +52,7 @@ public class UserController {
 
     @PutMapping("/users")
     public User updateUser(@Valid @RequestBody User updatedUser) {
-        if (!users.containsKey(updatedUser.getId())){
+        if (!users.containsKey(updatedUser.getId())) {
             log.info("Запрос на обновление пользователя не выполнен, не корректный id");
             throw new ValidationException("Передан неверный id");
         }
