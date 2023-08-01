@@ -1,9 +1,9 @@
 package ru.yandex.practicum.filmorate.model;
 
-import lombok.*;
+import lombok.Data;
+import lombok.NonNull;
+import lombok.Setter;
 
-
-import javax.validation.constraints.Email;
 import javax.validation.constraints.NotBlank;
 import java.time.LocalDate;
 
