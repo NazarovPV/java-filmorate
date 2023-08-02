@@ -31,7 +31,7 @@ public class FilmController {
         filmValidation(newFilm);
         id++;
         films.put(newFilm.getId(), newFilm);
-        log.info("Создана запись id = " + id + "с названием "+ newFilm.getName());
+        log.info("Создана запись id = " + id + "с названием " + newFilm.getName());
         return newFilm;
     }
 
