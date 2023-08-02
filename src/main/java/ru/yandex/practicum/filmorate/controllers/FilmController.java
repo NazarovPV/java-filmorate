@@ -10,33 +10,28 @@ import javax.validation.Valid;
 import java.time.LocalDate;
 import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.Map;
 
 
 @RestController
 @Validated
 @Slf4j
 public class FilmController {
-    private HashMap<Long, Film> films = new HashMap<>();
+    private final Map<Long, Film> films = new HashMap<>();
     private long id = 1;
 
     @GetMapping("/films")
     public ArrayList<Film> findAll() {
-        return (ArrayList<Film>) new ArrayList(films.values());
+        return new ArrayList(films.values());
     }
 
     @PostMapping("/films")
     public Film add(@RequestBody @Valid Film newFilm) {
         newFilm.setId(id);
-        if (newFilm.getDuration() < 0) {
-            log.info("Запрос на добавление фильма не выполнен из-за неверного ввода продолжительности фильма");
-            throw new ValidationException("Введена неверная продолжительность фильма");
-        }
-        if (newFilm.getReleaseDate().isBefore(LocalDate.of(1895, 12, 28))) {
-            log.info("Запрос на добавление фильма не выполнен из-за неверного ввода года выхода");
-            throw new ValidationException("Введен неверный год выпуска");
-        }
+        filmValidation(newFilm);
         id++;
         films.put(newFilm.getId(), newFilm);
+        log.info("Создана запись id = " + id + "с названием "+ newFilm.getName());
         return newFilm;
     }
 
@@ -46,12 +41,23 @@ public class FilmController {
             log.info("Запрос на обновление фильма не выполнен из-за id");
             throw new ValidationException("Введен неверный id");
         }
-        log.info("Запрос на обновление фильма выполнен");
 
-        films.remove(updatedFilm.getId());
+        filmValidation(updatedFilm);
         films.put(updatedFilm.getId(), updatedFilm);
+        log.info("Запрос на обновление фильма выполнен");
         return updatedFilm;
     }
 
+    private void filmValidation(Film film) {
+        if (film.getDuration() <= 0) {
+            log.info("Запрос на добавление фильма не выполнен из-за неверного ввода продолжительности фильма");
+            throw new ValidationException("Введена неверная продолжительность фильма");
+        }
+        if (film.getReleaseDate().isBefore(LocalDate.of(1895, 12, 28))) {
+            log.info("Запрос на добавление фильма не выполнен из-за неверного ввода года выхода");
+            throw new ValidationException("Введен неверный год выпуска");
+        }
+
+    }
 
 }
