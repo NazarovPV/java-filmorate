@@ -10,25 +10,25 @@ import java.util.HashSet;
 import java.util.Set;
 
 @Data
-public class Film  {
+public class Film {
     private long id;
 
     @NotBlank
     @NonNull
-    final private String name;
+    private final String name;
 
     @NotBlank
     @NonNull
     @Size(max = 200)
-    final private String description;
+    private final String description;
 
     @NonNull
-    final private LocalDate releaseDate;
+    private final LocalDate releaseDate;
 
     @NonNull
-    final private long duration;
+    private final long duration;
 
-    final private long rate;
+    private final long rate;
 
     private Set<Long> likesId = new HashSet<>();
 
