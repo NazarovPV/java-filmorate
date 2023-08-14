@@ -43,7 +43,7 @@ public class FilmService {
     }
 
     public Film update(Film updatedFilm) {
-        if ( filmStorage.findById(updatedFilm.getId()) == null) {
+        if (filmStorage.findById(updatedFilm.getId()) == null) {
             throw new NotFoundException("Введен неверный id");
         }
         filmStorage.update(updatedFilm);
