@@ -15,20 +15,20 @@ public class Film {
 
     @NotBlank
     @NonNull
-    private final String name;
+    private String name;
 
     @NotBlank
     @NonNull
     @Size(max = 200)
-    private final String description;
+    private String description;
 
     @NonNull
-    private final LocalDate releaseDate;
+    private LocalDate releaseDate;
 
     @NonNull
-    private final long duration;
+    private long duration;
 
-    private final long rate;
+    private long rate;
 
     private Set<Long> likesId = new HashSet<>();
 

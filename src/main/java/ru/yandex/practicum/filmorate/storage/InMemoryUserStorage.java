@@ -4,34 +4,36 @@ import org.springframework.stereotype.Component;
 import ru.yandex.practicum.filmorate.model.User;
 
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 @Component
 public class InMemoryUserStorage implements UserStorage {
-    private final List<User> list = new ArrayList<>();
+    private final Map<Long, User> users = new HashMap<>();
 
     @Override
     public void add(User newUser) {
-        list.add(newUser);
+        users.put(newUser.getId(), newUser);
     }
 
     @Override
     public void update(User updatedUser) {
-        list.replaceAll(e -> e.getId() == updatedUser.getId() ? updatedUser : e);
+        users.put(updatedUser.getId(), updatedUser);
     }
 
     @Override
     public void delete(User user) {
-        list.remove(user);
+        users.remove(user.getId());
     }
 
     @Override
     public List<User> findAll() {
-        return list;
+        return new ArrayList<>(users.values());
     }
 
     @Override
     public User findById(long id) {
-        return list.stream().filter(e -> e.getId() == id).findFirst().orElse(null);
+        return users.get(id);
     }
 }

@@ -13,6 +13,7 @@ import ru.yandex.practicum.filmorate.storage.UserStorage;
 import java.time.LocalDate;
 import java.util.Comparator;
 import java.util.List;
+import java.util.stream.Collectors;
 
 @Service
 @Slf4j
@@ -28,14 +29,8 @@ public class FilmService {
     }
 
     public Film add(Film newFilm) {
-        if (newFilm.getDuration() <= 0) {
-            log.info("Запрос на добавление фильма не выполнен из-за неверного ввода продолжительности фильма");
-            throw new ValidationException("Введена неверная продолжительность фильма");
-        }
-        if (newFilm.getReleaseDate().isBefore(LocalDate.of(1895, 12, 28))) {
-            log.info("Запрос на добавление фильма не выполнен из-за неверного ввода года выхода");
-            throw new ValidationException("Введен неверный год выпуска");
-        }
+        filmValidation(newFilm);
+
         newFilm.setId(++id);
         filmStorage.add(newFilm);
         log.info("Запрос на добавление фильма выполнен");
@@ -44,8 +39,10 @@ public class FilmService {
 
     public Film update(Film updatedFilm) {
         if (filmStorage.findById(updatedFilm.getId()) == null) {
+            log.info("Введен неверный id");
             throw new NotFoundException("Введен неверный id");
         }
+        filmValidation(updatedFilm);
         filmStorage.update(updatedFilm);
         log.info("Запрос на обновление фильма выполнен");
         return updatedFilm;
@@ -57,6 +54,7 @@ public class FilmService {
 
     public Film findById(long id) {
         if (filmStorage.findById(id) == null) {
+            log.info("Неверно указан id");
             throw new NotFoundException("Неверно указан id");
         }
         return filmStorage.findById(id);
@@ -64,6 +62,7 @@ public class FilmService {
 
     public void like(long id, long userId) {
         if (filmStorage.findById(id) == null || filmStorage.findById(userId) == null) {
+            log.info("Задан неверный id");
             throw new NotFoundException("Задан неверный id");
         }
         Film film = filmStorage.findById(id);
@@ -75,6 +74,7 @@ public class FilmService {
 
     public void unlike(long id, long userId) {
         if (filmStorage.findById(id) == null || filmStorage.findById(userId) == null) {
+            log.info("Задан неверный id");
             throw new NotFoundException("Задан неверный id");
         }
         Film film = filmStorage.findById(id);
@@ -86,7 +86,21 @@ public class FilmService {
 
     public List<Film> showTop(Integer count) {
         List<Film> filmSet = filmStorage.findAll();
-        filmSet.sort(Comparator.comparingLong(Film::getLikesCount).reversed());
-        return filmSet.subList(0, count > filmSet.size() ? filmSet.size() : count);
+        return filmSet.stream()
+                .sorted(Comparator.comparingLong(Film::getLikesCount).reversed())
+                .limit(count)
+                .collect(Collectors.toList());
     }
+
+    private void filmValidation(Film film) {
+        if (film.getDuration() <= 0) {
+            log.info("Запрос на добавление фильма не выполнен из-за неверного ввода продолжительности фильма");
+            throw new ValidationException("Введена неверная продолжительность фильма");
+        }
+        if (film.getReleaseDate().isBefore(LocalDate.of(1895, 12, 28))) {
+            log.info("Запрос на добавление фильма не выполнен из-за неверного ввода года выхода");
+            throw new ValidationException("Введен неверный год выпуска");
+        }
+    }
+
 }

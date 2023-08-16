@@ -13,6 +13,7 @@ import java.time.LocalDate;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Set;
+import java.util.stream.Collectors;
 
 @Service
 @Slf4j
@@ -26,17 +27,13 @@ public class UserService {
     }
 
     public User add(User newUser) {
-        if (newUser.getName().isEmpty()) {
-            log.info("Имя присвоено по названию логина");
-            newUser.setName(newUser.getLogin());
-        }
-        if (newUser.getLogin().chars().anyMatch(Character::isWhitespace)) {
-            log.info("Введен логин с пробелом");
-            throw new ValidationException("Логин не должен содержать пробелы");
-        }
-        if (newUser.getBirthday().isAfter(LocalDate.now())) {
-            log.info("Введен неверный год рождения");
-            throw new ValidationException("Дата рождения не может быть в будущем");
+        userValidation(newUser);
+        ArrayList<User> users = (ArrayList<User>) userStorage.findAll();
+        for (User user1 : users) {
+            if (user1.getEmail().equals(newUser.getEmail())) {
+                log.info("Пользователь с таким email уже существует.");
+                throw new ValidationException("Пользователь с таким email уже существует.");
+            }
         }
         newUser.setId(++id);
         userStorage.add(newUser);
@@ -46,8 +43,10 @@ public class UserService {
 
     public User update(User updatedUser) {
         if (userStorage.findById(updatedUser.getId()) == null) {
+            log.info("Запрос на обновление пользователя не выполнен. Передан неверный id");
             throw new NotFoundException("Передан неверный id");
         }
+        userValidation(updatedUser);
         userStorage.update(updatedUser);
         log.info("Запрос на обновление пользователя выполнен");
         return updatedUser;
@@ -59,6 +58,7 @@ public class UserService {
 
     public User findById(long id) {
         if (userStorage.findById(id) == null) {
+            log.info("Поиск по id не произведен. Передан неверный id");
             throw new NotFoundException("Передан неверный id");
         }
         return userStorage.findById(id);
@@ -66,19 +66,19 @@ public class UserService {
 
     public void addAsFriend(long id, long friendId) {
         if (userStorage.findById(id) == null || userStorage.findById(friendId) == null) {
+            log.info("Добавление в друзья не произведено. Ошибка в передаче id");
             throw new NotFoundException("Ошибка в передаче id");
         }
         User user = userStorage.findById(id);
         user.addAsFriend(friendId);
         User otherUser = userStorage.findById(friendId);
         otherUser.addAsFriend(id);
-        userStorage.update(user);
-        userStorage.update(otherUser);
         log.info("Запрос на добавление в друзья выполнен");
     }
 
     public void removeFriend(long id, long friendId) {
         if (userStorage.findById(id) == null || userStorage.findById(friendId) == null) {
+            log.info("Пользователь с данным id не найден");
             throw new NotFoundException("Ошибка в передаче id");
         }
         User user = findById(id);
@@ -92,6 +92,7 @@ public class UserService {
 
     public List<User> findUserFriends(long id) {
         if (userStorage.findById(id) == null) {
+            log.info("Пользователь с данным id не найден");
             throw new NotFoundException("Ошибка в передаче id");
         }
         List<User> userList = new ArrayList<>();
@@ -105,13 +106,34 @@ public class UserService {
             throw new NotFoundException("Ошибка в передаче id");
         }
         List<User> userMutualFriends = new ArrayList<>();
-        Set<Long> userFriendsIdSet = userStorage.findById(id).getFriends();
-        Set<Long> otherUserFriendsIdSet = userStorage.findById(otherId).getFriends();
-        for (var uid : userFriendsIdSet) {
-            if (otherUserFriendsIdSet.contains(uid)) {
-                userMutualFriends.add(userStorage.findById(uid));
-            }
+        List<Long> num = userStorage.findById(id).getFriends()
+                .stream()
+                .filter(userStorage.findById(otherId).getFriends()::contains)
+                .collect(Collectors.toList());
+        for (Long aLong : num) {
+            userMutualFriends.add(userStorage.findById(aLong));
         }
         return userMutualFriends;
+    }
+
+    private void userValidation(User user) {
+        if (user.getName().isEmpty()) {
+            log.info("Имя присвоено по названию логина");
+            user.setName(user.getLogin());
+        }
+        if (user.getLogin().chars().anyMatch(Character::isWhitespace)) {
+            log.info("Введен логин с пробелом");
+            throw new ValidationException("Логин не должен содержать пробелы");
+        }
+        if (user.getBirthday().isAfter(LocalDate.now())) {
+            log.info("Введен неверный год рождения");
+            throw new ValidationException("Дата рождения не может быть в будущем");
+        }
+        String[] str = user.getEmail().split("@");
+        if (str.length == 1) {
+            log.info("Введена не корректная электронная почта");
+            throw new ValidationException("электронная почта не может быть пустой и должна содержать символ @");
+        }
+
     }
 }
