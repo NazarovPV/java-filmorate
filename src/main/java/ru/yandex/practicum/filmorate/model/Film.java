@@ -13,7 +13,6 @@ import java.util.Set;
 @Data
 public class Film {
     public interface Update {
-
     }
 
     @NotNull(groups = {Update.class})

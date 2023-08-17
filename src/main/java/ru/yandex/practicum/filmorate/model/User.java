@@ -15,7 +15,6 @@ import java.util.Set;
 @RequiredArgsConstructor
 public class User {
     public interface Update {
-
     }
 
     @NotNull(groups = {Update.class})
