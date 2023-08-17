@@ -26,7 +26,7 @@ public class FilmController {
     }
 
     @PutMapping
-    public Film update(@RequestBody @Valid Film updatedFilm) {
+    public Film update(@Validated(Film.Update.class) @RequestBody Film updatedFilm) {
         return filmService.update(updatedFilm);
     }
 

@@ -61,26 +61,16 @@ public class FilmService {
     }
 
     public void like(long id, long userId) {
-        if (filmStorage.findById(id) == null || filmStorage.findById(userId) == null) {
-            log.info("Задан неверный id");
-            throw new NotFoundException("Задан неверный id");
-        }
         Film film = filmStorage.findById(id);
         User user = userStorage.findById(userId);
         film.like(user.getId());
-        filmStorage.update(film);
         log.info("Лайк поставлен");
     }
 
     public void unlike(long id, long userId) {
-        if (filmStorage.findById(id) == null || filmStorage.findById(userId) == null) {
-            log.info("Задан неверный id");
-            throw new NotFoundException("Задан неверный id");
-        }
         Film film = filmStorage.findById(id);
         User user = userStorage.findById(userId);
         film.unlike(user.getId());
-        filmStorage.update(film);
         log.info("Лайк удален");
     }
 
