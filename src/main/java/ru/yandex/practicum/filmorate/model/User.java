@@ -14,9 +14,10 @@ import java.util.Set;
 @Data
 @RequiredArgsConstructor
 public class User {
-    public interface Update{
+    public interface Update {
 
     }
+
     @NotNull(groups = {Update.class})
     private long id;
 

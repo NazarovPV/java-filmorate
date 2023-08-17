@@ -35,7 +35,7 @@ public class InMemoryUserStorage implements UserStorage {
 
     @Override
     public User findById(long id) {
-        if (!users.containsKey(id)){
+        if (!users.containsKey(id)) {
             throw new NotFoundException("Задан неверный id пользователя");
         }
         return users.get(id);

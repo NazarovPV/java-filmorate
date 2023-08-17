@@ -12,9 +12,10 @@ import java.util.Set;
 
 @Data
 public class Film {
-    public interface Update{
+    public interface Update {
 
     }
+
     @NotNull(groups = {Update.class})
     private long id;
 
