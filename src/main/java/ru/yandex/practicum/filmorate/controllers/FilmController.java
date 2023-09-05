@@ -1,63 +1,57 @@
 package ru.yandex.practicum.filmorate.controllers;
 
-import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
-import ru.yandex.practicum.filmorate.exceptions.ValidationException;
 import ru.yandex.practicum.filmorate.model.Film;
+import ru.yandex.practicum.filmorate.service.FilmService;
 
 import javax.validation.Valid;
-import java.time.LocalDate;
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.Map;
-
+import java.util.List;
 
 @RestController
 @Validated
-@Slf4j
+@RequestMapping("/films")
 public class FilmController {
-    private final Map<Long, Film> films = new HashMap<>();
-    private long id = 1;
+    private final FilmService filmService;
 
-    @GetMapping("/films")
-    public ArrayList<Film> findAll() {
-        return new ArrayList(films.values());
+    @Autowired
+    public FilmController(FilmService filmService) {
+        this.filmService = filmService;
     }
 
-    @PostMapping("/films")
+    @PostMapping
     public Film add(@RequestBody @Valid Film newFilm) {
-        newFilm.setId(id);
-        filmValidation(newFilm);
-        id++;
-        films.put(newFilm.getId(), newFilm);
-        log.info("Создана запись id = " + id + "с названием " + newFilm.getName());
-        return newFilm;
+        return filmService.add(newFilm);
     }
 
-    @PutMapping("/films")
-    public Film updateFilm(@RequestBody @Valid Film updatedFilm) {
-        if (!films.containsKey(updatedFilm.getId())) {
-            log.info("Запрос на обновление фильма не выполнен из-за id");
-            throw new ValidationException("Введен неверный id");
-        }
-
-        filmValidation(updatedFilm);
-        films.put(updatedFilm.getId(), updatedFilm);
-        log.info("Запрос на обновление фильма выполнен");
-        return updatedFilm;
+    @PutMapping
+    public Film update(@Validated(Film.Update.class) @RequestBody Film updatedFilm) {
+        return filmService.update(updatedFilm);
     }
 
-    private void filmValidation(Film film) {
-        if (film.getDuration() <= 0) {
-            log.info("Запрос на добавление фильма не выполнен из-за неверного ввода продолжительности фильма");
-            throw new ValidationException("Введена неверная продолжительность фильма");
-        }
-        if (film.getReleaseDate().isBefore(LocalDate.of(1895, 12, 28))) {
-            log.info("Запрос на добавление фильма не выполнен из-за неверного ввода года выхода");
-            throw new ValidationException("Введен неверный год выпуска");
-        }
-
+    @GetMapping
+    public List<Film> findAll() {
+        return filmService.findAll();
     }
 
+    @GetMapping("/{id}")
+    public Film findById(@PathVariable long id) {
+        return filmService.findById(id);
+    }
+
+    @PutMapping("/{id}/like/{userId}")
+    public void like(@PathVariable long id, @PathVariable long userId) {
+        filmService.like(id, userId);
+    }
+
+    @DeleteMapping("/{id}/like/{userId}")
+    public void unlike(@PathVariable long id, @PathVariable long userId) {
+        filmService.unlike(id, userId);
+    }
+
+    @GetMapping("/popular")
+    public List<Film> showTop(@RequestParam(defaultValue = "10") Integer count) {
+        return filmService.showTop(count);
+    }
 }
