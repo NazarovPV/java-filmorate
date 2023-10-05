@@ -21,9 +21,11 @@ import java.sql.Date;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
 import java.util.Optional;
+import java.util.stream.Collectors;
 
 @Slf4j
 @Component
@@ -80,23 +82,23 @@ public class FilmDbStorage implements FilmStorage {
         film.setId(Objects.requireNonNull(generatedId.getKey()).intValue());
 
         if (film.getGenres() != null) {
-
-            final String genresSqlQuery = "INSERT INTO film_genre (film_id, genre_id) VALUES (?, ?)";
-
-            this.jdbcTemplate.batchUpdate(
-                    genresSqlQuery,
-                    new BatchPreparedStatementSetter() {
-                        public void setValues(PreparedStatement ps, int i) throws SQLException {
-                            Genre genre = film.getGenres().get(i);
-                            ps.setString(1, String.valueOf(film.getId()));
-                            ps.setString(2, String.valueOf(genre.getId()));
-                        }
-
-                        @Override
-                        public int getBatchSize() {
-                            return film.getGenres().size();
-                        }
-                    });
+            saveGenres(film);
+//            final String genresSqlQuery = "INSERT INTO film_genre (film_id, genre_id) VALUES (?, ?)";
+//
+//            this.jdbcTemplate.batchUpdate(
+//                    genresSqlQuery,
+//                    new BatchPreparedStatementSetter() {
+//                        public void setValues(PreparedStatement ps, int i) throws SQLException {
+//                            Genre genre = film.getGenres().get(i);
+//                            ps.setString(1, String.valueOf(film.getId()));
+//                            ps.setString(2, String.valueOf(genre.getId()));
+//                        }
+//
+//                        @Override
+//                        public int getBatchSize() {
+//                            return film.getGenres().size();
+//                        }
+//                    });
         }
         return film;
     }
@@ -106,8 +108,15 @@ public class FilmDbStorage implements FilmStorage {
         final String sqlQuery = "UPDATE films SET name = ?, description = ?, release_date = ?, " +
                 "duration = ?, mpa_id = ? WHERE id = ?";
         if (film.getGenres() != null) {
+            List<Genre> listGenres = new ArrayList<>(film.getGenres());
+            List<Genre> uniqueGenres =
+                    listGenres
+                            .stream()
+                            .distinct()
+                            .collect(Collectors.toList());
+            film.setGenres(uniqueGenres);
             genreDbStorage.deleteFilmGenres(film.getId());
-            genreDbStorage.addFilmGenres(film.getId(), film.getGenres());
+            saveGenres(film);
         }
 
         jdbcTemplate.update(sqlQuery,
@@ -123,11 +132,7 @@ public class FilmDbStorage implements FilmStorage {
 
     @Override
     public void deleteFilm(Integer filmId) {
-        final String genresSqlQuery = "DELETE FROM film_genre WHERE film_id = ?";
-        String mpaSqlQuery = "DELETE FROM mpa WHERE id = ?";
 
-        jdbcTemplate.update(genresSqlQuery, filmId);
-        jdbcTemplate.update(mpaSqlQuery, filmId);
         final String sqlQuery = "DELETE FROM films WHERE id = ?";
 
         jdbcTemplate.update(sqlQuery, filmId);
@@ -180,6 +185,26 @@ public class FilmDbStorage implements FilmStorage {
     public Optional<Film> getFilmWithMpaById(Integer id) {
         String query = "SELECT f.id, f.description, f.name, f.release_date, f.duration, f.mpa_id, m.name AS mpa_name FROM films f JOIN mpa m ON f.mpa_id = m.id WHERE f.id = ?";
         return jdbcTemplate.query(query, new Object[]{id}, new FilmWithMpaRowMapper()).stream().findFirst();
+    }
+
+    private void saveGenres(Film film) {
+
+        final String genresSqlQuery = "INSERT INTO film_genre (film_id, genre_id) VALUES (?, ?)";
+
+        this.jdbcTemplate.batchUpdate(
+                genresSqlQuery,
+                new BatchPreparedStatementSetter() {
+                    public void setValues(PreparedStatement ps, int i) throws SQLException {
+                        Genre genre = film.getGenres().get(i);
+                        ps.setString(1, String.valueOf(film.getId()));
+                        ps.setString(2, String.valueOf(genre.getId()));
+                    }
+
+                    @Override
+                    public int getBatchSize() {
+                        return film.getGenres().size();
+                    }
+                });
     }
 
     private class FilmWithMpaRowMapper implements RowMapper<Film> {
