@@ -83,22 +83,6 @@ public class FilmDbStorage implements FilmStorage {
 
         if (film.getGenres() != null) {
             saveGenres(film);
-//            final String genresSqlQuery = "INSERT INTO film_genre (film_id, genre_id) VALUES (?, ?)";
-//
-//            this.jdbcTemplate.batchUpdate(
-//                    genresSqlQuery,
-//                    new BatchPreparedStatementSetter() {
-//                        public void setValues(PreparedStatement ps, int i) throws SQLException {
-//                            Genre genre = film.getGenres().get(i);
-//                            ps.setString(1, String.valueOf(film.getId()));
-//                            ps.setString(2, String.valueOf(genre.getId()));
-//                        }
-//
-//                        @Override
-//                        public int getBatchSize() {
-//                            return film.getGenres().size();
-//                        }
-//                    });
         }
         return film;
     }
