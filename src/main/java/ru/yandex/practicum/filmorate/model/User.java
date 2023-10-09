@@ -1,51 +1,38 @@
 package ru.yandex.practicum.filmorate.model;
 
-import lombok.Data;
+import lombok.AllArgsConstructor;
+import lombok.Builder;
+import lombok.Getter;
+import lombok.NoArgsConstructor;
 import lombok.NonNull;
-import lombok.RequiredArgsConstructor;
+import lombok.Setter;
 
 import javax.validation.constraints.Email;
 import javax.validation.constraints.NotBlank;
-import javax.validation.constraints.NotNull;
+import javax.validation.constraints.PastOrPresent;
+import javax.validation.constraints.Positive;
 import java.time.LocalDate;
-import java.util.HashSet;
-import java.util.Set;
 
-@Data
-@RequiredArgsConstructor
+@Getter
+@Setter
+@NoArgsConstructor
+@AllArgsConstructor
+@Builder
 public class User {
-    public interface Update {
-    }
 
-    @NotNull(groups = {Update.class})
-    private long id;
+    @Positive
+    private Integer id;
 
     @Email
     @NotBlank
-    @NonNull
     private String email;
 
     @NotBlank
-    @NonNull
     private String login;
 
-    @NonNull
     private String name;
 
     @NonNull
+    @PastOrPresent
     private LocalDate birthday;
-
-    private Set<Long> friendsIdSet = new HashSet<>();
-
-    public void addAsFriend(long id) {
-        friendsIdSet.add(id);
-    }
-
-    public void removeFromFriends(long id) {
-        friendsIdSet.remove(id);
-    }
-
-    public Set<Long> getFriends() {
-        return friendsIdSet;
-    }
 }

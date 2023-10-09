@@ -1,96 +1,103 @@
 package ru.yandex.practicum.filmorate.service;
 
+import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import ru.yandex.practicum.filmorate.exceptions.NotFoundException;
-import ru.yandex.practicum.filmorate.exceptions.ValidationException;
 import ru.yandex.practicum.filmorate.model.Film;
-import ru.yandex.practicum.filmorate.model.User;
-import ru.yandex.practicum.filmorate.storage.FilmStorage;
-import ru.yandex.practicum.filmorate.storage.UserStorage;
+import ru.yandex.practicum.filmorate.storage.dao.FilmStorage;
+import ru.yandex.practicum.filmorate.storage.dao.GenreStorage;
+import ru.yandex.practicum.filmorate.storage.dao.MpaStorage;
+import ru.yandex.practicum.filmorate.storage.impl.FilmDbStorage;
 
+import javax.validation.ValidationException;
 import java.time.LocalDate;
-import java.util.Comparator;
 import java.util.List;
-import java.util.stream.Collectors;
 
-@Service
 @Slf4j
+@Service
+@RequiredArgsConstructor
 public class FilmService {
+
     private final FilmStorage filmStorage;
-    private final UserStorage userStorage;
-    private int id;
 
-    @Autowired
-    public FilmService(FilmStorage filmStorage, UserStorage userStorage) {
-        this.filmStorage = filmStorage;
-        this.userStorage = userStorage;
+    private final GenreStorage genreStorage;
+
+    private final MpaStorage mpaStorage;
+
+    private final FilmDbStorage filmDbStorage;
+
+    public List<Film> getFilms() {
+        List<Film> films = filmDbStorage.getFilmsWithMpa();
+        films.forEach(f -> {
+            f.setGenres(genreStorage.getByFilmId(f.getId()));
+        });
+        return films;
     }
 
-    public Film add(Film newFilm) {
-        filmValidation(newFilm);
-
-        newFilm.setId(++id);
-        filmStorage.add(newFilm);
-        log.info("Запрос на добавление фильма выполнен");
-        return newFilm;
+    public Film getFilmById(Integer id) {
+        Film film = filmDbStorage.getFilmWithMpaById(id)
+                .orElseThrow(() -> new NotFoundException("The movie was not found!"));
+        log.info("The film was received!");
+        film.setGenres(genreStorage.getByFilmId(id));
+        return film;
     }
 
-    public Film update(Film updatedFilm) {
-        if (filmStorage.findById(updatedFilm.getId()) == null) {
-            log.info("Введен неверный id");
-            throw new NotFoundException("Введен неверный id");
+    public Film addFilm(Film film) {
+        validateFilm(film);
+        return filmStorage.addFilm(film);
+    }
+
+    public Film updateFilm(Film film) {
+        validateFilm(film);
+        containsFilm(film.getId());
+        Film resultFilm = filmStorage.updateFilm(film);
+        resultFilm.setGenres(genreStorage.getByFilmId(film.getId()));
+        return resultFilm;
+    }
+
+    public void deleteFilm(int id) {
+        containsFilm(id);
+        filmStorage.deleteFilm(id);
+    }
+
+    public void addLike(Integer id, Integer userId) {
+        containsFilm(id);
+        containsUser(userId);
+        filmStorage.addLike(id, userId);
+        log.info(String.valueOf(filmStorage.getUserById(userId)));
+    }
+
+    public void deleteLike(Integer id, Integer userId) {
+        if (userId < 1) {
+            throw new NotFoundException("id < 1");
         }
-        filmValidation(updatedFilm);
-        filmStorage.update(updatedFilm);
-        log.info("Запрос на обновление фильма выполнен");
-        return updatedFilm;
+        containsFilm(id);
+        containsUser(userId);
+        filmStorage.deleteLike(id, userId);
+        log.info(String.valueOf(filmStorage.getUserById(userId)));
     }
 
-    public List<Film> findAll() {
-        return filmStorage.findAll();
+    public List<Film> getPopularFilms(Integer count) {
+        List<Film> films = filmStorage.getPopularFilms(count);
+        films.forEach(f -> {
+            f.setGenres(genreStorage.getByFilmId(f.getId()));
+            f.setMpa(mpaStorage.getByFilmId(f.getId()));
+        });
+        return films;
     }
 
-    public Film findById(long id) {
-        if (filmStorage.findById(id) == null) {
-            log.info("Неверно указан id");
-            throw new NotFoundException("Неверно указан id");
-        }
-        return filmStorage.findById(id);
-    }
-
-    public void like(long id, long userId) {
-        Film film = filmStorage.findById(id);
-        User user = userStorage.findById(userId);
-        film.like(user.getId());
-        log.info("Лайк поставлен");
-    }
-
-    public void unlike(long id, long userId) {
-        Film film = filmStorage.findById(id);
-        User user = userStorage.findById(userId);
-        film.unlike(user.getId());
-        log.info("Лайк удален");
-    }
-
-    public List<Film> showTop(Integer count) {
-        List<Film> filmSet = filmStorage.findAll();
-        return filmSet.stream()
-                .sorted(Comparator.comparingLong(Film::getLikesCount).reversed())
-                .limit(count)
-                .collect(Collectors.toList());
-    }
-
-    private void filmValidation(Film film) {
-        if (film.getDuration() <= 0) {
-            log.info("Запрос на добавление фильма не выполнен из-за неверного ввода продолжительности фильма");
-            throw new ValidationException("Введена неверная продолжительность фильма");
-        }
+    private void validateFilm(Film film) {
         if (film.getReleaseDate().isBefore(LocalDate.of(1895, 12, 28))) {
-            log.info("Запрос на добавление фильма не выполнен из-за неверного ввода года выхода");
-            throw new ValidationException("Введен неверный год выпуска");
+            throw new ValidationException("Cinema hasn't been invented yet!");
         }
     }
 
+    private void containsFilm(int id) {
+        filmStorage.getFilmById(id).orElseThrow(() -> new NotFoundException("The movie with id does not exist!"));
+    }
+
+    private void containsUser(int id) {
+        filmStorage.getUserById(id).orElseThrow(() -> new NotFoundException("The user with id does not exist!"));
+    }
 }
